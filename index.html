@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8" />
+    <title>AI Ticket Classifier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Cpath d='M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z' /%3E%3C/svg%3E">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/index.css">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .pulse-text {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .5;
+            }
+        }
+
+        /* Estilos para el modal */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 font-sans text-slate-800 flex flex-col min-h-screen">
+
+    <!-- HEADER SUPERIOR -->
+    <div class="bg-slate-900 text-white text-xs py-1.5 text-center font-medium tracking-wide shadow-md z-[60]">
+        De Ing Jonathan Baquero para: <span class="text-indigo-400 font-bold">truora.com</span>
+    </div>
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="container mx-auto px-4 md:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <span class="font-bold text-xl text-indigo-600 mr-8 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        AI Tickets
+                    </span>
+
+                    <div class="flex space-x-2">
+                        <button id="nav-create"
+                            class="px-4 py-2 rounded-md text-sm font-medium bg-indigo-50 text-indigo-700 transition hover:bg-indigo-100 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4v16m8-8H4" />
+                            </svg>
+                            Nuevo Ticket
+                        </button>
+                        <button id="nav-list"
+                            class="px-4 py-2 rounded-md text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition flex items-center relative">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            Gestión de Tickets
+                            <span id="badge-process"
+                                class="ml-2 bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full hidden">0</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 md:p-8 flex-grow relative">
+
+        <!-- VISTA 1: CREAR TICKET -->
+        <section id="view-create" class="fade-in">
+            <header class="text-center mb-10">
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-800">Clasificador Inteligente</h1>
+                <p class="text-slate-500 mt-2 max-w-2xl mx-auto">
+                    Use mi API KEY de Gemini ayudar a analizar y clasificar incidencias basándose en datos históricos,
+                    tal como se dice en en la prueba, MEDIANTE LA ARQUITECTURA RAG, evaluando y estudiando 1ro los datos
+                    historicos del Json que me proporcionaron.
+                </p>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Columna Formulario -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200/80">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center text-slate-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-indigo-500" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                            </path>
+                        </svg>
+                        Datos del Incidente
+                    </h2>
+
+                    <form id="ticket-form">
+                        <div class="mb-4">
+                            <label for="userName" class="block text-sm font-medium text-slate-600 mb-1">Tu
+                                Nombre</label>
+                            <input id="userName" name="userName" type="text"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Ej: Juan Pérez" value="">
+                        </div>
+
+                        <div class="mb-6">
+                            <label for="problemDescription"
+                                class="block text-sm font-medium text-slate-600 mb-1">Descripción del Problema</label>
+                            <textarea id="problemDescription" name="problemDescription" rows="8"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+                                placeholder="Describe el problema detalladamente..."></textarea>
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <button type="submit" id="submit-button"
+                                class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-300 disabled:cursor-not-allowed transition">
+                                <span class="button-text">Clasificar con IA</span>
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" id="loading-spinner"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button type="button" id="reset-button"
+                                class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-400 transition">
+                                Limpiar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Columna Resultados IA -->
+                <div id="results-container"
+                    class="bg-white p-6 rounded-2xl shadow-lg border border-slate-200/80 flex flex-col min-h-[400px]">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center text-slate-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-green-500" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        Clasificación Automática
+                    </h2>
+                    <div id="results-content" class="flex-grow relative">
+                        <div
+                            class="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8 border-2 border-dashed border-slate-300 rounded-lg">
+                            <p class="font-semibold">Los resultados aparecerán aquí.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA 2: LISTA DE TICKETS -->
+        <section id="view-list" class="hidden fade-in">
+            <header class="mb-8 flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800">Panel de Gestión</h2>
+                    <p class="text-slate-500 mt-1">Administra el estado y ciclo de vida de los tickets.</p>
+                </div>
+                <div class="text-sm text-slate-500 space-x-4">
+                    <span class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span>En
+                        Proceso</span>
+                    <span class="inline-flex items-center"><span
+                            class="w-2 h-2 rounded-full bg-green-500 mr-2"></span>Resueltos</span>
+                </div>
+            </header>
+
+            <!-- Contenedor de Tickets en Proceso -->
+            <div class="mb-10">
+                <h3 class="text-lg font-semibold text-blue-700 mb-4 flex items-center border-b pb-2 border-slate-200">
+                    Tickets en Proceso
+                </h3>
+                <div id="tickets-process-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div
+                        class="col-span-full text-center py-12 text-slate-400 bg-slate-100/50 rounded-xl border border-dashed border-slate-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 mx-auto mb-2 text-slate-300"
+                            fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        No hay tickets activos actualmente.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenedor de Tickets Resueltos -->
+            <div>
+                <h3 class="text-lg font-semibold text-green-700 mb-4 flex items-center border-b pb-2 border-slate-200">
+                    Historial de Resueltos <span class="ml-2 text-sm text-slate-400 font-normal">(Últimos 50 tickets
+                        cargados)</span>
+                </h3>
+                <div id="tickets-resolved-list"
+                    class="space-y-3 opacity-90 max-h-[600px] overflow-y-auto custom-scroll pr-2">
+                    <!-- Se inyectan aquí -->
+                </div>
+            </div>
+        </section>
+
+        <!-- MODAL DE EDICIÓN -->
+        <div id="edit-modal" class="fixed inset-0 z-[100] hidden modal-overlay overflow-y-auto">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div
+                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-slate-900 mb-4" id="modal-title">Editar Ticket
+                            <span id="modal-ticket-id" class="font-mono bg-slate-100 px-2 py-1 rounded text-sm"></span>
+                        </h3>
+                        <form id="edit-form" class="space-y-4">
+                            <div><label
+                                    class="block text-xs font-bold text-slate-500 uppercase mb-1">Título</label><input
+                                    type="text" id="edit-titulo"
+                                    class="w-full p-2 border rounded shadow-sm focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div><label
+                                    class="block text-xs font-bold text-slate-500 uppercase mb-1">Descripción</label><textarea
+                                    id="edit-descripcion" rows="3"
+                                    class="w-full p-2 border rounded shadow-sm focus:ring-2 focus:ring-indigo-500"></textarea>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label
+                                        class="block text-xs font-bold text-slate-500 uppercase mb-1">Prioridad</label><select
+                                        id="edit-prioridad" class="w-full p-2 border rounded bg-white">
+                                        <option>P1</option>
+                                        <option>P2</option>
+                                        <option>P3</option>
+                                        <option>P4</option>
+                                    </select></div>
+                                <div><label
+                                        class="block text-xs font-bold text-slate-500 uppercase mb-1">Urgencia</label><select
+                                        id="edit-urgencia" class="w-full p-2 border rounded bg-white">
+                                        <option>Crítica</option>
+                                        <option>Alta</option>
+                                        <option>Media</option>
+                                        <option>Baja</option>
+                                    </select></div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label
+                                        class="block text-xs font-bold text-slate-500 uppercase mb-1">SLA</label><input
+                                        type="text" id="edit-sla" class="w-full p-2 border rounded"></div>
+                                <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Tiempo
+                                        Resolución</label><input type="text" id="edit-resolucion"
+                                        class="w-full p-2 border rounded"></div>
+                            </div>
+
+                            <div><label
+                                    class="block text-xs font-bold text-slate-500 uppercase mb-1">Categoría</label><input
+                                    type="text" id="edit-categoria" class="w-full p-2 border rounded"></div>
+                            <div><label
+                                    class="block text-xs font-bold text-slate-500 uppercase mb-1">Solución</label><textarea
+                                    id="edit-solucion" rows="2" class="w-full p-2 border rounded shadow-sm"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="bg-slate-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="button" id="save-edit-btn"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 sm:ml-3 sm:w-auto sm:text-sm">Guardar
+                            Cambios</button>
+                        <button type="button" onclick="closeModal()"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { GoogleGenAI, Type } from "https://next.esm.sh/@google/genai@^1.30.0";
+
+        // --- DATOS HISTÓRICOS ---
+        const historicalDataDB = [
+            { "ticket_id": "T001", "titulo": "API de validación no responde - Error 500", "descripcion": "Clientes reportan que el endpoint /api/v2/identity/validate retorna error 500. Afecta a todos los usuarios en producción desde las 14:30.", "prioridad": "P1", "urgencia": "Crítica", "sla": "1 hora", "categoria": "Validación de identidad – Disponibilidad", "tiempo_resolucion": "45 minutos", "solucion": "Se reinició el pool de conexiones de la base de datos y se escalaron instancias." },
+            { "ticket_id": "T002", "titulo": "Lentitud en dashboard de reportes", "descripcion": "Usuario reporta que el dashboard tarda más de 30 segundos en cargar. Solo afecta a un cliente específico.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Performance – UI", "tiempo_resolucion": "6 horas", "solucion": "Se optimizó la query de base de datos, se añadió índice y se liberaron datos obsoletos." },
+            { "ticket_id": "T003", "titulo": "Consulta sobre integración con Webhooks", "descripcion": "Cliente pregunta cómo configurar webhooks para recibir notificaciones de validaciones completadas. Necesita documentación.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Customer Engagement – Consulta", "tiempo_resolucion": "2 horas", "solucion": "Se envió la documentación técnica de la API y se agendó demo si es necesario." },
+            { "ticket_id": "T004", "titulo": "Falla en verificación de antecedentes – país específico", "descripcion": "El módulo de verificación de antecedentes no retorna datos para Perú desde las 09:00. Otros países funcionan correctamente.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Verificación de antecedentes – Integración país", "tiempo_resolucion": "3 horas 30 minutos", "solucion": "Se detectó cambio en API del proveedor local; se aplicó parche y se liberó fix para el país en cuestión." },
+            { "ticket_id": "T005", "titulo": "Error de autenticación en Customer Engagement WhatsApp", "descripcion": "Los mensajes desde WhatsApp vía chatbot no se envían, aparece error 401. Afecta a todos los flujos de soporte.", "prioridad": "P1", "urgencia": "Crítica", "sla": "1 hora", "categoria": "Customer Engagement – Disponibilidad", "tiempo_resolucion": "50 minutos", "solucion": "Se renovaron los tokens de acceso, reiniciado el servicio de mensajería y verificados los logs de integración." },
+            { "ticket_id": "T006", "titulo": "Alta latencia en validación de identidad móvil", "descripcion": "La API /api/v2/identity/mobile tarda más de 8 segundos en devolver respuesta, lo cual impacta la experiencia móvil.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – Performance", "tiempo_resolucion": "5 horas", "solucion": "Se identificó cuello de botella en microservicio de imágenes, se escaló horizontalmente y respuesta volvió a <2 segundos." },
+            { "ticket_id": "T007", "titulo": "Solicitud de cambio en flujo de onboarding KYC", "descripcion": "Cliente solicita modificar el flujo de onboarding para que primero se valide foto de identidad antes que datos básicos.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Validación de identidad – Cambio funcional", "tiempo_resolucion": "1 día", "solucion": "Se diseñó nuevo diagrama de flujo, se entregó requerimiento técnico y se programó para la próxima versión." },
+            { "ticket_id": "T008", "titulo": "Fallo en envío de notificaciones masivas vía WhatsApp", "descripcion": "Campaña de notificaciones a 10 000 usuarios quedó detenida a mitad del envío sin errores visibles.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Customer Engagement – Notificaciones", "tiempo_resolucion": "4 horas 15 minutos", "solucion": "Se reinició el servicio de colas, se limpió backlog y se limitó simultaneidad para evitar saturación." },
+            { "ticket_id": "T009", "titulo": "Error 403 en verificación de antecedentes – módulo AML", "descripcion": "Al consultar antecedentes AML, la API devuelve 403 para ciertos casos, impidiendo onboarding de nuevos clientes.", "prioridad": "P1", "urgencia": "Crítica", "sla": "1 hora", "categoria": "Verificación de antecedentes – Seguridad", "tiempo_resolucion": "30 minutos", "solucion": "Se identificó revocación de clave de API, se regeneró y restableció el acceso con éxito." },
+            { "ticket_id": "T010", "titulo": "Conversión de chatbot no registra eventos", "descripcion": "El chatbot de WhatsApp no está registrando conversiones en Google Analytics como se configuró.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Customer Engagement – Integración externa", "tiempo_resolucion": "10 horas", "solucion": "Se corrigió la configuración del tag de Analytics, validamos eventos y conversiones empezaron a registrarse." },
+            { "ticket_id": "T011", "titulo": "API de validación de identidad devuelve estado “pendiente” indefinidamente", "descripcion": "El endpoint de verificación se queda en estado “pending” por más de 10 minutos para nuevos usuarios.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – Estados de proceso", "tiempo_resolucion": "2 horas 30 minutos", "solucion": "Se ajustó timeout del servicio de terceros y se implementó mecanismo de fallback a estado “rechazado” tras 2 minutos." },
+            { "ticket_id": "T012", "titulo": "Solicitud de personalización de plantilla de WhatsApp", "descripcion": "Cliente solicita personalizar la plantilla de mensajes de WhatsApp con variables dinámicas adicionales.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Customer Engagement – Personalización", "tiempo_resolucion": "3 horas", "solucion": "Se creó nueva plantilla y se actualizó en la plataforma, se notificó al cliente y quedó validada." },
+            { "ticket_id": "T013", "titulo": "Reporte de actividad de antecedentes genera datos incompletos", "descripcion": "El reporte descargable (.csv) del módulo de antecedentes omite la columna “fecha de última actualización”.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Verificación de antecedentes – Reportes", "tiempo_resolucion": "8 horas", "solucion": "Se identificó error en el generador de CSV, se añadió campo faltante y se liberó versión corregida." },
+            { "ticket_id": "T014", "titulo": "Problema de acceso al portal de administración", "descripcion": "El cliente no puede ingresar al portal de administración de Customer Engagement desde Chrome en modo incognito.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Customer Engagement – Acceso", "tiempo_resolucion": "5 horas", "solucion": "Se detectó bloqueo por cookies de terceros, se ajustó configuración para modo incógnito y se informó cliente." },
+            { "ticket_id": "T015", "titulo": "Fallo al procesar imagen de identidad – formato no compatible", "descripcion": "La API de validación de identidad no acepta imagen en formato HEIC, causando error para usuarios iOS.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – Formato de archivo", "tiempo_resolucion": "3 horas 20 minutos", "solucion": "Se añadió soporte para HEIC o bien conversión automática a JPG, y se desplegó parche." },
+            { "ticket_id": "T016", "titulo": "Error de factura – módulo de Customer Engagement", "descripcion": "El cliente no pudo visualizar su factura mensual en la plataforma de Customer Engagement.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Customer Engagement – Facturación", "tiempo_resolucion": "7 horas", "solucion": "Se rectificó el acceso al módulo de facturación, se generó la factura manualmente y se cargó en portal." },
+            { "ticket_id": "T017", "titulo": "Solicitud de actualización de nivel de servicio para verificación AML", "descripcion": "El cliente requiere que el tiempo de respuesta para módulo AML pase de 5 minutos a 2 minutos.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Verificación de antecedentes – SLA", "tiempo_resolucion": "12 horas", "solucion": "Se evaluó factibilidad, se aplicó propuesta técnica y se actualizó contrato con nuevo SLA." },
+            { "ticket_id": "T018", "titulo": "La plataforma arroja “502 Bad Gateway” intermitente", "descripcion": "Durante la mañana se presentó “502 Bad Gateway” para el portal de administración de identidad digital.", "prioridad": "P1", "urgencia": "Crítica", "sla": "1 hora", "categoria": "Validación de identidad – Infraestructura", "tiempo_resolucion": "55 minutos", "solucion": "Se identificó un loop en el balanceador de carga, se corrigió la configuración y se restableció servicio." },
+            { "ticket_id": "T019", "titulo": "Fallo en webhook de estado “validado”", "descripcion": "El cliente no recibe el webhook cuando la validación de identidad pasa a estado “validado”.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – Webhooks", "tiempo_resolucion": "3 horas", "solucion": "Se corrigió la configuración del endpoint del cliente y se volvió a probar exitosamente." },
+            { "ticket_id": "T020", "titulo": "Campaña de WhatsApp muestra doble recibo", "descripcion": "Al enviar campaña de 5 000 mensajes, algunos usuarios recibieron el mensaje dos veces.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Customer Engagement – Mensajería", "tiempo_resolucion": "9 horas", "solucion": "Se detectó duplicidad en la encolación de mensajes, se limpió backlog y se ajustó lógica de control." },
+            { "ticket_id": "T021", "titulo": "Error de relevamiento de datos en antecedentes – país Argentina", "descripcion": "La verificación de antecedentes para Argentina arroja datos desactualizados desde hace 2 días.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Verificación de antecedentes – Calidad de datos", "tiempo_resolucion": "2 horas 40 minutos", "solucion": "Se coordinó con proveedor local para refrescar dataset y se forzó limpieza de caché." },
+            { "ticket_id": "T022", "titulo": "Solicitud de reporte personalizado – Customer Engagement", "descripcion": "El cliente requiere un reporte mensual de métricas específico para envíos vía WhatsApp, no incluido en la versión estándar.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Customer Engagement – Reportes personalizados", "tiempo_resolucion": "18 horas", "solucion": "Se desarrolló módulo de reporte personalizado y se entregó en 18 horas." },
+            { "ticket_id": "T023", "titulo": "Fallo en token de autenticación – verificación de antecedentes", "descripcion": "El módulo de antecedentes devuelve “Invalid token” para nuevos clientes registrados.", "prioridad": "P1", "urgencia": "Crítica", "sla": "1 hora", "categoria": "Verificación de antecedentes – Autenticación", "tiempo_resolucion": "25 minutos", "solucion": "Se detectó cambio en key de autenticación, se regeneró y se comunicó al cliente." },
+            { "ticket_id": "T024", "titulo": "Discrepancia entre resultados de identidad y antecedentes", "descripcion": "Para ciertos usuarios la identidad es validada pero los antecedentes muestran error → inconsistencias en la plataforma.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Integración – Identidad & Antecedentes", "tiempo_resolucion": "4 horas 30 minutos", "solucion": "Se ajustó lógica de correlación entre módulos y se sincronizó estados correctamente." },
+            { "ticket_id": "T025", "titulo": "Botón “Iniciar verificación” no habilitado en UI móvil", "descripcion": "En la aplicación móvil iOS el botón para iniciar verificación de identidad no aparece para algunos usuarios.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Validación de identidad – UI móvil", "tiempo_resolucion": "7 horas 30 minutos", "solucion": "Se detectó problema de compatibilidad CSS en iOS 17, se aplicó parche y se actualizó la SDK móvil." },
+            { "ticket_id": "T026", "titulo": "Solicitar aumento de límite de envíos por campaña", "descripcion": "El cliente desea aumentar su límite diario de envíos de campañas WhatsApp de 50 000 a 100 000.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Customer Engagement – Límite de campaña", "tiempo_resolucion": "20 horas", "solucion": "Se validó capacidad, se aprobó incremento y se configuró nuevo límite para el cliente." },
+            { "ticket_id": "T027", "titulo": "Módulo de antecedentes no responde para tipo “proveedor”", "descripcion": "Cuando se consulta antecedentes de tipo “proveedor”, la API retorna null y no hay mensaje de error claro.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Verificación de antecedentes – Tipos de entidad", "tiempo_resolucion": "3 horas 45 minutes", "solucion": "Se corrigió endpoint para incluir parámetro “entity_type=provider”, se actualizó documentación." },
+            { "ticket_id": "T028", "titulo": "Solicitud de entrenamiento para bot de soporte WhatsApp", "descripcion": "Cliente solicita sesión de capacitación para utilizar la funcionalidad de bot de soporte en su instancia de Customer Engagement.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Customer Engagement – Capacitación", "tiempo_resolucion": "4 horas", "solucion": "Se agendó sesión de capacitación, se entregaron materiales de apoyo y se mandó grabación." },
+            { "ticket_id": "T029", "titulo": "Reporte de errores 404 en portal de identidad digital", "descripcion": "Se detectaron múltiples errores 404 al acceder a funcionalidades secundarias del portal de verificación de identidad.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – Portal administración", "tiempo_resolucion": "6 horas", "solucion": "Se restauraron rutas perdidas, se corrigieron enlaces rotos y se liberó nueva versión." },
+            { "ticket_id": "T030", "titulo": "Clientes duplicados en módulo de verificación de antecedentes", "descripcion": "Al subir archivo de clientes para verificar antecedentes, algunos clientes figuran duplicados y se cobran doble verificación.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Verificación de antecedentes – Facturación", "tiempo_resolucion": "9 horas", "solucion": "Se limpió duplicidad, se devolvió el cargo duplicado y se implementó validación de duplicados en el sistema." },
+            { "ticket_id": "T031", "titulo": "La integración SDK móvil de identidad falla en Android 14", "descripcion": "Los usuarios con Android 14 reportan que la cámara no se abre al iniciar captura de documento en onboarding.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – SDK móvil", "tiempo_resolucion": "5 horas 10 minutos", "solucion": "Se aplicó corrección para permisos de cámara en Android 14, se desplegó versión 2.1.4 del SDK." },
+            {
+                "ticket_id": "T032", "titulo": "Solicitud de duplicado de conversación WhatsApp para auditoría", "descripcion": "El cliente necesita exportar todas las conversaciones de bot de los últimos 6 meses para auditoría interna.", "prioridad": "P4",
+                "urgencia": "Baja", "sla": "72 horas", "categoria": "Customer Engagement – Exportación de datos", "tiempo_resolucion": "22 horas", "solucion": "Se generó exportación en formato csv y ftp seguro, se notificó al cliente."
+            },
+            { "ticket_id": "T033", "titulo": "Fallo en verificación de identidad usando pasaporte europeo", "descripcion": "Usuarios con pasaporte europeo obtienen error de validación “documento no encontrado”. Otros documentos funcionan.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – País/Documento", "tiempo_resolucion": "4 horas 50 minutos", "solucion": "Se añadió soporte para formato MRZ europeo, se actualizó base de datos de documentos." },
+            { "ticket_id": "T034", "titulo": "Interrupción menor en mensajería WhatsApp – retrasos 5-10 minutos", "descripcion": "Se reportan retrasos de 5 a 10 minutos en entrega de mensajes de bot de soporte, sin caída completa.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Customer Engagement – Latencia", "tiempo_resolucion": "4 horas 30 minutos", "solucion": "Se descubrió saturación en una de las colas, se repartió carga a nueva instancia y latencia volvió a nivel normal." },
+            { "ticket_id": "T035", "titulo": "Error de carga de archivo para verificación de antecedentes", "descripcion": "El sistema no acepta archivo CSV de más de 10 MB en la carga masiva de verificación de antecedentes.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Verificación de antecedentes – Carga masiva", "tiempo_resolucion": "6 horas 15 minutos", "solucion": "Se aumentó límite de tamaño a 50 MB y se mejoró mensaje de error para informar al usuario." },
+            { "ticket_id": "T036", "titulo": "Solicitud de cambio de idioma en portal de identidad digital", "descripcion": "El cliente necesita que el portal muestre inicialmente Español e Inglés y no solo español.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Validación de identidad – Internacionalización", "tiempo_resolucion": "15 horas", "solucion": "Se activó soporte de inglés, se actualizó textos y se entregó nueva versión al cliente." },
+            { "ticket_id": "T037", "titulo": "Notificación de rechazo no llega a usuario", "descripcion": "Cuando la verificación de identidad termina en estado “rechazado”, el usuario no recibe notificación por correo.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Validación de identidad – Notificaciones", "tiempo_resolucion": "7 horas 40 minutes", "solucion": "Se activó servicio de envío de correo, se reenviaron los correos pendientes y se revisó filtro de spam." },
+            { "ticket_id": "T038", "titulo": "El botón “Enviar campaña” está deshabilitado después de actualización", "descripcion": "Tras una actualización del sistema, el cliente reporta que el botón para enviar campañas de WhatsApp está deshabilitado.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Customer Engagement – UI", "tiempo_resolucion": "3 horas 50 minutes", "solucion": "Se revisó rollback, se reactivó botón y se pasó test de usuario antes de liberar." },
+            { "ticket_id": "T039", "titulo": "Verificación de antecedentes tardía – 30 minutos en módulo rápido", "descripcion": "El módulo de “verificación rápida” tomó 30 minutos para completarse, excediendo el SLA prometido de 5 minutos.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "tiempo_resolucion": "4 horas 5 minutos", "categoria": "Verificación de antecedentes – SLA incumplido", "solucion": "Se revisaron logs del servicio externo, se migró a otro proveedor más veloz y los tiempos volvieron a 4 minutos." },
+            { "ticket_id": "T040", "titulo": "Solicitud de desactivación de módulo de antecedentes para cliente", "descripcion": "El cliente quiere suspender el módulo de antecedentes temporalmente durante 3 meses por cambio de regulación interna.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Verificación de antecedentes – Cambio contractual", "tiempo_resolucion": "20 horas", "solucion": "Se procesó baja temporal, se ajustó contrato y se cerró con confirmación del cliente." },
+            { "ticket_id": "T041", "titulo": "Error intermitente en autenticación OAuth", "descripcion": "Usuarios reportan que ocasionalmente la autenticación vía OAuth falla con error 504.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Seguridad – Autenticación", "tiempo_resolucion": "3 horas 15 minutos", "solucion": "Se aumentó el timeout del servicio externo y se añadió reintento automático." },
+            { "ticket_id": "T042", "titulo": "Lentitud en la generación de tokens JWT", "descripcion": "El servicio de autenticación tarda más de 3 segundos en firmar tokens JWT bajo carga alta.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Seguridad – Performance", "tiempo_resolucion": "2 horas 50 minutos", "solucion": "Se optimizó el algoritmo de firma y se asignaron más recursos de CPU al servicio de auth." },
+            { "ticket_id": "T043", "titulo": "Inconsistencia en logs de auditoría", "descripcion": "Algunas acciones de administradores no aparecen reflejadas en el log de auditoría principal.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Seguridad – Auditoría", "tiempo_resolucion": "6 horas", "solucion": "Se corrigió una condición de carrera en el servicio de logging asíncrono." },
+            { "ticket_id": "T044", "titulo": "Fallo de validación cruzada en documentos de identidad", "descripcion": "La validación cruzada entre OCR y código de barras falla para documentos de nueva emisión.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Validación de identidad – OCR", "tiempo_resolucion": "5 horas", "solucion": "Se actualizó la librería de OCR para reconocer el nuevo formato de documento." },
+            { "ticket_id": "T045", "titulo": "Error en la exportación de reportes PDF", "descripcion": "Al intentar exportar reportes grandes a PDF, el sistema arroja error de memoria insuficiente.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Plataforma – Reportes", "tiempo_resolucion": "8 horas", "solucion": "Se implementó generación de PDF por streaming para reducir consumo de memoria RAM." },
+            { "ticket_id": "T046", "titulo": "Webhook de 'mensaje leído' no se dispara", "descripcion": "La plataforma no está enviando el webhook cuando un usuario final lee el mensaje de WhatsApp.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Customer Engagement – Webhooks", "tiempo_resolucion": "3 horas", "solucion": "Se reactivó el listener de eventos de lectura en el conector de WhatsApp Business API." },
+            { "ticket_id": "T047", "titulo": "Problema de codificación en nombres con tildes", "descripcion": "Los nombres con tildes o caracteres especiales se guardan corruptos en la base de datos de antecedentes.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "Datos – Codificación", "tiempo_resolucion": "4 horas", "solucion": "Se forzó codificación UTF-8 en el string de conexión de la base de datos." },
+            { "ticket_id": "T048", "titulo": "Dashboard de métricas en tiempo real no actualiza", "descripcion": "Las gráficas de uso en tiempo real se quedan congeladas y requieren recargar la página.", "prioridad": "P3", "urgencia": "Media", "sla": "24 horas", "categoria": "UI – Dashboard", "tiempo_resolucion": "5 horas 30 minutos", "solucion": "Se reinició el servicio de WebSockets y se corrigió el cliente frontend de reconexión." },
+            { "ticket_id": "T049", "titulo": "Error al borrar usuario de prueba", "descripcion": "No se permite eliminar usuarios marcados como 'test' debido a restricciones de clave foránea.", "prioridad": "P4", "urgencia": "Baja", "sla": "72 horas", "categoria": "Plataforma – Gestión de usuarios", "tiempo_resolucion": "10 horas", "solucion": "Se implementó borrado en cascada lógico para limpiar referencias en tablas hijas." },
+            { "ticket_id": "T050", "titulo": "Doble facturación en módulo de SMS", "descripcion": "A un cliente se le cobró dos veces el paquete de 1000 SMS del mes de octubre.", "prioridad": "P2", "urgencia": "Alta", "sla": "4 horas", "categoria": "Facturación – SMS", "tiempo_resolucion": "2 horas", "solucion": "Se emitió nota de crédito inmediata y se corrigió el job de facturación recurrente." }
+        ];
+
+        // --- ESTADO ---
+        const API_KEY = 'AIzaSyAgSjI9LZXS1tNMv2x2w9J2ZC7I8ftIlwI';
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+        let classifiedTicket = null;
+        let feedbackStatus = {};
+        let ticketsInProcess = [];
+        let currentEditingTicketId = null;
+
+        let ticketsResolved = historicalDataDB.map(t => ({
+            ...t,
+            resolvedAt: "Histórico"
+        })).reverse();
+
+        let nextTicketNumber = 51;
+        let loadingInterval = null;
+
+        // --- DOM ELEMENTS ---
+        const navCreate = document.getElementById('nav-create');
+        const navList = document.getElementById('nav-list');
+        const viewCreate = document.getElementById('view-create');
+        const viewList = document.getElementById('view-list');
+        const badgeProcess = document.getElementById('badge-process');
+
+        const form = document.getElementById('ticket-form');
+        const userNameInput = document.getElementById('userName');
+        const problemDescriptionInput = document.getElementById('problemDescription');
+        const submitButton = document.getElementById('submit-button');
+        const resetButton = document.getElementById('reset-button');
+        const resultsContent = document.getElementById('results-content');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const buttonText = submitButton.querySelector('.button-text');
+
+        const processListContainer = document.getElementById('tickets-process-list');
+        const resolvedListContainer = document.getElementById('tickets-resolved-list');
+
+        // MODAL ELEMENTS
+        const editModal = document.getElementById('edit-modal');
+        const saveEditBtn = document.getElementById('save-edit-btn');
+
+        // --- RAG RETRIEVAL (Simulated) ---
+        function retrieveRelevantTickets(query) {
+            if (!query) return [];
+
+            const terms = query.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+
+            const scored = historicalDataDB.map(ticket => {
+                let score = 0;
+                const text = (ticket.titulo + " " + ticket.descripcion + " " + ticket.categoria).toLowerCase();
+                terms.forEach(term => {
+                    if (text.includes(term)) score += 1;
+                });
+                return { ticket, score };
+            });
+
+            // Ordenar por score y tomar los top 3
+            return scored
+                .filter(item => item.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 3)
+                .map(item => item.ticket);
+        }
+
+        // --- MODAL LOGIC ---
+        window.openEditModal = function (ticketId) {
+            const ticket = ticketsInProcess.find(t => t.ticket_id === ticketId);
+            if (!ticket) return;
+
+            currentEditingTicketId = ticketId;
+
+            document.getElementById('modal-ticket-id').textContent = ticketId;
+            document.getElementById('edit-titulo').value = ticket.titulo;
+            document.getElementById('edit-descripcion').value = ticket.descripcion;
+            document.getElementById('edit-prioridad').value = ticket.prioridad;
+            document.getElementById('edit-urgencia').value = ticket.urgencia;
+            document.getElementById('edit-sla').value = ticket.sla;
+            document.getElementById('edit-resolucion').value = ticket.tiempo_resolucion;
+            document.getElementById('edit-categoria').value = ticket.categoria;
+            document.getElementById('edit-solucion').value = ticket.solucion;
+
+            editModal.classList.remove('hidden');
+        };
+
+        window.closeModal = function () {
+            editModal.classList.add('hidden');
+            currentEditingTicketId = null;
+        };
+
+        saveEditBtn.addEventListener('click', () => {
+            if (!currentEditingTicketId) return;
+
+            const index = ticketsInProcess.findIndex(t => t.ticket_id === currentEditingTicketId);
+            if (index > -1) {
+                ticketsInProcess[index] = {
+                    ...ticketsInProcess[index],
+                    titulo: document.getElementById('edit-titulo').value,
+                    descripcion: document.getElementById('edit-descripcion').value,
+                    prioridad: document.getElementById('edit-prioridad').value,
+                    urgencia: document.getElementById('edit-urgencia').value,
+                    sla: document.getElementById('edit-sla').value,
+                    tiempo_resolucion: document.getElementById('edit-resolucion').value,
+                    categoria: document.getElementById('edit-categoria').value,
+                    solucion: document.getElementById('edit-solucion').value
+                };
+
+                renderTicketLists();
+                closeModal();
+            }
+        });
+
+        // --- NAVIGATION LOGIC ---
+        function switchView(viewName) {
+            if (viewName === 'create') {
+                viewCreate.classList.remove('hidden');
+                viewList.classList.add('hidden');
+
+                navCreate.classList.replace('text-slate-600', 'text-indigo-700');
+                navCreate.classList.replace('bg-transparent', 'bg-indigo-50');
+                navCreate.classList.remove('hover:bg-slate-100');
+
+                navList.classList.replace('text-indigo-700', 'text-slate-600');
+                navList.classList.replace('bg-indigo-50', 'bg-transparent');
+                navList.classList.add('hover:bg-slate-100');
+
+            } else {
+                viewCreate.classList.add('hidden');
+                viewList.classList.remove('hidden');
+                renderTicketLists();
+
+                navList.classList.replace('text-slate-600', 'text-indigo-700');
+                navList.classList.replace('bg-transparent', 'bg-indigo-50');
+                navList.classList.remove('hover:bg-slate-100');
+
+                navCreate.classList.replace('text-indigo-700', 'text-slate-600');
+                navCreate.classList.replace('bg-indigo-50', 'bg-transparent');
+                navCreate.classList.add('hover:bg-slate-100');
+            }
+        }
+
+        navCreate.addEventListener('click', () => switchView('create'));
+        navList.addEventListener('click', () => switchView('list'));
+
+        // --- APP LOGIC ---
+        const slaMatrix = {
+            'P1': { urgencia: 'Crítica', resolucion: '4 horas', respuesta: '15 minutos' },
+            'P2': { urgencia: 'Alta', resolucion: '2 días hábiles', respuesta: '30 minutos' },
+            'P3': { urgencia: 'Media', resolucion: '5 días hábiles', respuesta: '1 hora' },
+            'P4': { urgencia: 'Baja', resolucion: '10 días hábiles', respuesta: '4 horas' }
+        };
+
+        function updateBadges() {
+            const count = ticketsInProcess.length;
+            badgeProcess.textContent = count;
+            if (count > 0) badgeProcess.classList.remove('hidden');
+            else badgeProcess.classList.add('hidden');
+        }
+
+        function generateTicketId() {
+            const id = `T${nextTicketNumber.toString().padStart(3, '0')}`;
+            nextTicketNumber++;
+            return id;
+        }
+
+        async function classifyTicketWithGemini(userName, problemDescription) {
+            // RAG: Paso 1 - Recuperación (Retrieval)
+            const relevantDocs = retrieveRelevantTickets(problemDescription);
+
+            // Si no hay relevantes, usamos un fallback genérico o los últimos 3
+            const contextData = JSON.stringify(relevantDocs.length > 0 ? relevantDocs : historicalDataDB.slice(0, 3), null, 2);
+
+            const prompt = `
+        Actúa como un experto en soporte técnico nivel 3.
+        Analiza esta solicitud de soporte y clasifícala.
+        
+        Usuario: "${userName}". 
+        Problema: "${problemDescription}".
+        
+        **MATRIZ SLA (Obligatoria):**
+        P1 (Crítico) -> SLA: 15 min | Res: 4 horas
+        P2 (Alta)    -> SLA: 30 min | Res: 2 días hábiles
+        P3 (Media)   -> SLA: 1 hora | Res: 5 días hábiles
+        P4 (Baja)    -> SLA: 4 horas| Res: 10 días hábiles
+
+        **Casos Similares Recuperados (RAG Context):**
+        ${contextData}
+
+        **Instrucciones:**
+        1. Usa los casos similares para entender la categoría y el tono técnico.
+        2. Determina la prioridad basándote en la gravedad del problema descrito.
+        3. Genera una solución técnica preliminar sugerida.
+
+        Genera JSON puro:
+        {
+          "titulo": "Título técnico corto",
+          "descripcion": "Resumen técnico del problema",
+          "prioridad": "P1|P2|P3|P4",
+          "urgencia": "Crítica|Alta|Media|Baja",
+          "sla": "Tiempo 1ra respuesta",
+          "tiempo_resolucion": "Tiempo resolución",
+          "solucion": "Pasos sugeridos",
+          "categoria": "Categoría - Subcategoría",
+          "confianza": { "titulo": 0.9, ... }
+        }
+      `;
+
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt,
+                config: { responseMimeType: "application/json" },
+            });
+            return JSON.parse(response.text.trim());
+        }
+
+        // --- RENDER FORM RESULTS ---
+        function getConfidenceColor(score) {
+            if (score >= 0.9) return 'text-green-600';
+            if (score >= 0.7) return 'text-yellow-600';
+            return 'text-red-600';
+        }
+
+        function getFeedbackRingColor(status) {
+            return status === 'confirmed' ? 'ring-green-500' : (status === 'corrected' ? 'ring-blue-500' : 'ring-slate-300');
+        }
+
+        function renderInitialState() {
+            resultsContent.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full text-center text-slate-500 p-8 border-2 border-dashed border-slate-300 rounded-lg">
+          <p class="font-semibold">Los resultados aparecerán aquí.</p>
+        </div>`;
+        }
+
+        function renderLoadingState(isLoading, message) {
+            submitButton.disabled = isLoading;
+            resetButton.disabled = isLoading;
+
+            if (isLoading) {
+                buttonText.textContent = message || 'Procesando...';
+                loadingSpinner.classList.remove('hidden');
+
+                resultsContent.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-slate-500 animate-pulse">
+                  <div class="relative flex items-center justify-center mb-4">
+                      <div class="absolute animate-ping h-12 w-12 rounded-full bg-indigo-400 opacity-75"></div>
+                      <div class="relative rounded-full h-10 w-10 bg-indigo-500 flex items-center justify-center text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      </div>
+                  </div>
+                  <h3 class="text-xl font-bold text-slate-700 mb-2 pulse-text">${message}</h3>
+                  <p class="text-sm text-slate-400">Esto puede tomar unos segundos...</p>
+                </div>`;
+            } else {
+                buttonText.textContent = 'Clasificar con IA';
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function renderResults() {
+            if (!classifiedTicket) { renderInitialState(); return; }
+            const fields = ['ticket_id', 'titulo', 'descripcion', 'prioridad', 'urgencia', 'sla', 'categoria', 'tiempo_resolucion', 'solucion'];
+
+            const html = fields.map(field => {
+                if (field === 'ticket_id') {
+                    return `<div class="mb-3"><label class="text-xs font-bold text-slate-500 uppercase">Ticket ID</label><input type="text" value="${classifiedTicket.ticket_id}" readonly class="w-full p-2 bg-slate-100 border rounded text-slate-600"></div>`;
+                }
+
+                let input = '';
+                const ring = getFeedbackRingColor(feedbackStatus[field]);
+                const classes = `w-full p-2 border rounded shadow-sm focus:outline-none focus:ring-2 bg-white ring-2 ${ring}`;
+
+                if (field === 'urgencia' || field === 'prioridad') {
+                    const opts = field === 'urgencia' ? ['Crítica', 'Alta', 'Media', 'Baja'] : ['P1', 'P2', 'P3', 'P4'];
+                    input = `<select data-field="${field}" class="${classes}">${opts.map(o => `<option value="${o}" ${classifiedTicket[field] === o ? 'selected' : ''}>${o}</option>`).join('')}</select>`;
+                } else if (['descripcion', 'solucion'].includes(field)) {
+                    input = `<textarea data-field="${field}" rows="3" class="${classes}">${classifiedTicket[field]}</textarea>`;
+                } else {
+                    input = `<input type="text" data-field="${field}" value="${classifiedTicket[field]}" class="${classes}">`;
+                }
+
+                let statusBadge = feedbackStatus[field] === 'unconfirmed'
+                    ? '<span class="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Pendiente</span>'
+                    : '<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Confirmado</span>';
+                if (feedbackStatus[field] === 'corrected') statusBadge = '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Corregido</span>';
+
+                return `<div class="mb-3 relative">
+                      <div class="flex justify-between mb-1"><label class="text-xs font-bold text-slate-500 uppercase">${field.replace('_', ' ')}</label>${statusBadge}</div>
+                      ${input}
+                      <div class="text-right"><span class="text-xs font-mono ${getConfidenceColor(classifiedTicket.confianza[field] || 0.9)}">Confianza: ${(classifiedTicket.confianza[field] * 100).toFixed(0)}%</span></div>
+                    </div>`;
+            }).join('');
+
+            const btnHtml = `
+            <div class="mt-6 pt-4 border-t border-slate-200">
+                <button id="confirm-all-button" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded shadow transition transform active:scale-95 flex justify-center items-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Confirmar y Guardar Ticket
+                </button>
+            </div>`;
+
+            resultsContent.innerHTML = html + btnHtml;
+
+            document.getElementById('confirm-all-button').addEventListener('click', handleConfirmAll);
+            resultsContent.querySelectorAll('input, textarea, select').forEach(el => {
+                el.addEventListener('input', handleFieldChange);
+            });
+        }
+
+        // --- LIST MANAGEMENT ---
+
+        window.resolveTicket = function (ticketId) {
+            const index = ticketsInProcess.findIndex(t => t.ticket_id === ticketId);
+            if (index > -1) {
+                const ticket = ticketsInProcess.splice(index, 1)[0];
+                ticket.resolvedAt = new Date().toLocaleString();
+                ticketsResolved.unshift(ticket);
+                updateBadges();
+                renderTicketLists();
+            }
+        };
+
+        function renderTicketLists() {
+            // Render In Process
+            if (ticketsInProcess.length === 0) {
+                processListContainer.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-300">No hay tickets en proceso.</div>`;
+            } else {
+                processListContainer.innerHTML = ticketsInProcess.map(t => `
+                <div class="bg-white rounded-xl shadow border border-slate-200 p-5 hover:shadow-lg transition relative overflow-hidden group">
+                    <div class="absolute top-0 left-0 w-1 h-full ${t.prioridad === 'P1' ? 'bg-red-500' : (t.prioridad === 'P2' ? 'bg-orange-500' : 'bg-blue-500')}"></div>
+                    <div class="flex justify-between items-start mb-3 pl-3 cursor-pointer hover:opacity-75 transition" onclick="window.openEditModal('${t.ticket_id}')">
+                        <span class="font-mono text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded">${t.ticket_id}</span>
+                        <span class="text-xs font-bold ${t.prioridad === 'P1' ? 'text-red-600' : 'text-slate-500'}">${t.prioridad} - ${t.urgencia}</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 mb-2 pl-3 line-clamp-2 cursor-pointer hover:text-indigo-600" onclick="window.openEditModal('${t.ticket_id}')">${t.titulo}</h3>
+                    <p class="text-sm text-slate-600 mb-4 pl-3 line-clamp-3">${t.descripcion}</p>
+                    
+                    <div class="bg-slate-50 p-3 rounded text-xs text-slate-500 mb-4 ml-3">
+                        <p><strong>SLA:</strong> ${t.sla}</p>
+                        <p><strong>Resolución:</strong> ${t.tiempo_resolucion}</p>
+                        <p class="mt-2 text-slate-700 italic border-t pt-1 border-slate-200">"${t.solucion.substring(0, 50)}..."</p>
+                    </div>
+
+                    <div class="flex space-x-2 ml-3">
+                        <button onclick="window.openEditModal('${t.ticket_id}')" class="flex-1 bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 font-medium py-2 rounded transition text-xs">
+                            Editar
+                        </button>
+                        <button onclick="window.resolveTicket('${t.ticket_id}')" class="flex-1 bg-white border border-green-500 text-green-600 hover:bg-green-50 font-medium py-2 rounded transition flex justify-center items-center text-xs">
+                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Resolver
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            }
+
+            // Render Resolved
+            if (ticketsResolved.length === 0) {
+                resolvedListContainer.innerHTML = `<p class="text-sm text-slate-400 italic pl-2">No hay tickets resueltos aún.</p>`;
+            } else {
+                resolvedListContainer.innerHTML = ticketsResolved.map(t => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded border border-slate-200">
+                    <div class="flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3 text-xs">✓</span>
+                        <div>
+                            <p class="text-sm font-medium text-slate-600 hover:text-indigo-600 transition cursor-pointer">${t.ticket_id}: ${t.titulo}</p>
+                            <p class="text-xs text-slate-400 flex items-center gap-2">
+                                <span>Resolución: ${t.tiempo_resolucion}</span>
+                                ${t.resolvedAt !== "Histórico" ? `<span>• ${t.resolvedAt}</span>` : ''}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                         <span class="text-xs font-mono bg-white px-2 py-1 border rounded mr-2">${t.prioridad}</span>
+                         <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">${t.categoria.split('–')[0]}</span>
+                    </div>
+                </div>
+            `).join('');
+            }
+        }
+
+
+        // --- HANDLERS ---
+        function handleConfirmAll() {
+            Object.keys(feedbackStatus).forEach(k => feedbackStatus[k] = 'confirmed');
+            const confirmed = { ...classifiedTicket };
+            ticketsInProcess.unshift(confirmed);
+
+            updateBadges();
+
+            classifiedTicket = null;
+            form.reset();
+            renderInitialState();
+
+            // Alerta eliminada como solicitado
+        }
+
+        function handleFieldChange(e) {
+            const f = e.target.dataset.field;
+            const v = e.target.value;
+            classifiedTicket[f] = v;
+            feedbackStatus[f] = 'corrected';
+
+            if (f === 'prioridad' && slaMatrix[v]) {
+                classifiedTicket.urgencia = slaMatrix[v].urgencia;
+                classifiedTicket.tiempo_resolucion = slaMatrix[v].resolucion;
+                classifiedTicket.sla = slaMatrix[v].respuesta;
+                ['urgencia', 'tiempo_resolucion', 'sla'].forEach(k => feedbackStatus[k] = 'corrected');
+            }
+            renderResults();
+
+            const el = document.querySelector(`[data-field="${f}"]`);
+            if (el && el.tagName !== 'SELECT') {
+                const val = el.value; el.value = ''; el.value = val; el.focus();
+            }
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const u = userNameInput.value.trim();
+            const d = problemDescriptionInput.value.trim();
+            if (!u || !d) return alert("Completa los campos");
+
+            // INICIO DE SECUENCIA DE CARGA
+            renderLoadingState(true, "Conectando con API Gemini...");
+
+            // Simulación de pasos de carga (solo visual)
+            setTimeout(() => {
+                if (submitButton.disabled) renderLoadingState(true, "Procesando solicitud...");
+            }, 1500);
+
+            setTimeout(() => {
+                if (submitButton.disabled) renderLoadingState(true, "Generando clasificación...");
+            }, 3000);
+
+            try {
+                const res = await classifyTicketWithGemini(u, d);
+                res.ticket_id = generateTicketId();
+                classifiedTicket = res;
+                feedbackStatus = {};
+                Object.keys(res.confianza).forEach(k => feedbackStatus[k] = 'unconfirmed');
+                renderResults();
+            } catch (err) {
+                console.error(err);
+                alert("Error al contactar con la IA.");
+            } finally {
+                renderLoadingState(false);
+            }
+        }
+
+        function handleReset() {
+            form.reset();
+            classifiedTicket = null;
+            renderInitialState();
+        }
+
+        form.addEventListener('submit', handleSubmit);
+        resetButton.addEventListener('click', handleReset);
+        renderInitialState();
+        renderTicketLists();
+        updateBadges();
+
+    </script>
+    <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>

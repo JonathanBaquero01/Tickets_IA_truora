@@ -1,0 +1,5 @@
+{
+  "name": "AI Ticket Classifier",
+  "description": "An intelligent application to automatically classify support tickets using Gemini. It analyzes user input, suggests categories, priority, and urgency, and allows for engineer feedback to refine its suggestions.",
+  "requestFramePermissions": []
+}
