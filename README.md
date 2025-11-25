@@ -3,7 +3,7 @@
 > **Desarrollado por:** Ing. Jonathan Baquero  
 > **Para:** Truora.com
 
-Este proyecto es un sistema inteligente de gestión y clasificación de tickets de soporte técnico. Utiliza **Inteligencia Artificial Generativa (Google Gemini 1.5 Flash)** y una arquitectura **RAG (Retrieval-Augmented Generation)** ejecutada del lado del cliente para analizar, priorizar y sugerir soluciones a incidentes basándose en datos históricos reales.
+Este proyecto es un sistema inteligente de gestión y clasificación de tickets de soporte técnico. Utiliza **Inteligencia Artificial Generativa (Google Gemini)** y una arquitectura **RAG (Retrieval-Augmented Generation)** ejecutada del lado del cliente para analizar, priorizar y sugerir soluciones a incidentes basándose en datos históricos reales.
 
 ---
 
